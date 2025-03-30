@@ -1,4 +1,3 @@
-# src/controllers/fleet_manager.py
 from tkinter import simpledialog
 from src.utils.helpers import log_action, notify_user
 from src.models.robot import Robot

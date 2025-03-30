@@ -1,4 +1,3 @@
-# src/models/nav_graph.py
 import json
 
 class NavGraph:

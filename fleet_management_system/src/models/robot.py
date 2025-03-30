@@ -1,4 +1,3 @@
-# src/models/robot.py
 class Robot:
     def __init__(self, id, pos_idx, color, priority):
         self.id = id

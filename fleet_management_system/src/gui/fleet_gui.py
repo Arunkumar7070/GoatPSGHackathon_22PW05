@@ -1,4 +1,3 @@
-# src/gui/fleet_gui.py
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 import os
@@ -15,7 +14,6 @@ class FleetGUI:
         self.fleet_manager = fleet_manager
         self.fleet_manager.gui = self
 
-        # Left frame for canvas
         self.left_frame = tk.Frame(self.root)
         self.left_frame.pack(side=tk.LEFT, padx=10, pady=10)
         self.canvas_width = 1000
@@ -23,11 +21,9 @@ class FleetGUI:
         self.canvas = tk.Canvas(self.left_frame, width=self.canvas_width, height=self.canvas_height, bg="white")
         self.canvas.pack()
 
-        # Right frame for controls
         self.right_frame = tk.Frame(self.root)
         self.right_frame.pack(side=tk.RIGHT, padx=10, pady=10)
 
-        # Control frame
         self.control_frame = tk.Frame(self.right_frame)
         self.control_frame.pack()
         self.graph_files = [f for f in os.listdir("data") if f.startswith("nav_graph_") and f.endswith(".json")]
@@ -45,7 +41,6 @@ class FleetGUI:
         self.graph_label = tk.Label(self.control_frame, text=f"Current Graph: {self.selected_graph.get()}")
         self.graph_label.pack(pady=10)
 
-        # Log frame
         self.log_frame = tk.Frame(self.right_frame)
         self.log_frame.pack(fill=tk.BOTH, expand=True)
         tk.Label(self.log_frame, text="Logs:").pack()
@@ -55,7 +50,6 @@ class FleetGUI:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.log_text.config(yscrollcommand=scrollbar.set)
 
-        # Dashboard frame
         self.dashboard_frame = tk.Frame(self.right_frame)
         self.dashboard_frame.pack(pady=10)
         self.num_robots_label = tk.Label(self.dashboard_frame, text="Number of robots: 0")
@@ -75,9 +69,7 @@ class FleetGUI:
         self.nodes = {}
         self.lane_tags = {}
         
-        # Initialize canvas binding and load graph after all widgets are created
         self.canvas.bind("<Button-1>", self.handle_click)
-        # Move load_nav_graph after all GUI components are initialized
         if self.selected_graph.get():
             self.load_nav_graph(self.selected_graph.get())
 

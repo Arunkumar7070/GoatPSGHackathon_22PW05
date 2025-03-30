@@ -7,14 +7,11 @@ def log_action(gui, message):
     timestamp = datetime.now().strftime("[%Y-%m-%d %H:%M:%S]")
     log_message = f"{timestamp} {message}"
 
-    # Print to console
     print(log_message)
 
-    # Add to GUI log
     gui.log_text.insert(tk.END, log_message + "\n")
     gui.log_text.see(tk.END)
 
-    # Write to file
     log_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs', 'fleet_logs.txt')
     os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
     with open(log_file_path, 'a') as log_file:
