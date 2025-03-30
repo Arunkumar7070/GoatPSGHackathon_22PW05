@@ -1,6 +1,8 @@
 import random
 import heapq
 from src.utils.helpers import log_action, notify_user
+from tkinter import messagebox
+
 
 class TrafficManager:
     def __init__(self, nav_graph, gui):
@@ -61,14 +63,15 @@ class TrafficManager:
         log_action(self.gui, f"No path found from {start_idx} to {goal_idx}")
         return []
 
+
     def update_traffic(self, robots):
-        # Reset occupied lanes and vertices
+    # Reset occupied lanes and vertices
         self.occupied_lanes.clear()
         self.occupied_vertices.clear()
 
         # Track currently occupied lanes and vertices
         for robot in robots:
-            if robot.status == "moving" and robot.path and robot.progress >= 1:
+            if robot.status == "moving" and robot.path and robot.progress > 0:
                 next_idx = robot.path[0]
                 lane = tuple(sorted([robot.pos_idx, next_idx]))
                 self.occupied_lanes.add(lane)
@@ -84,7 +87,26 @@ class TrafficManager:
                 next_idx = robot.path[0]
                 lane = tuple(sorted([robot.pos_idx, next_idx]))
                 
-                # Handle same-vertex conflicts
+                # Check for robots meeting at the same vertex or lane
+                meeting_robots = [
+                    r for r in robots
+                    if r != robot and r.status == "moving" and r.path and (
+                        (r.pos_idx == next_idx and r.path[0] == robot.pos_idx) or  # Head-on collision
+                        (tuple(sorted([r.pos_idx, r.path[0]])) == lane)  # Same lane conflict
+                    )
+                ]
+                
+                if meeting_robots:
+                    # Both robots enter waiting state
+                    robot.status = "waiting"
+                    self.waiting_cooldown[robot.id] = self.waiting_cooldown.get(robot.id, 0) + 1
+                    for other_robot in meeting_robots:
+                        other_robot.status = "waiting"
+                        self.waiting_cooldown[other_robot.id] = self.waiting_cooldown.get(other_robot.id, 0) + 1
+                    log_action(self.gui, f"{robot.id} (P:{robot.priority}) and {meeting_robots[0].id} (P:{meeting_robots[0].priority}) waiting due to meeting")
+                    continue
+
+                # Handle same-vertex conflicts (existing logic)
                 same_vertex_competitors = [
                     r for r in robots
                     if r != robot and r.pos_idx == robot.pos_idx and r.path and r.path[0] == next_idx
@@ -94,10 +116,10 @@ class TrafficManager:
                     if robot != highest_priority:
                         robot.status = "waiting"
                         self.waiting_cooldown[robot.id] = self.waiting_cooldown.get(robot.id, 0) + 1
-                        log_action(self.gui, f"{robot.id} waiting for {highest_priority.id} to move")
+                        log_action(self.gui, f"{robot.id} waiting for {highest_priority.id} to move (same vertex)")
                         continue
 
-                # Detect potential blockers
+                # Detect blockers (existing logic adapted)
                 blockers = [
                     r for r in robots
                     if r != robot and (
@@ -106,43 +128,66 @@ class TrafficManager:
                     )
                 ]
 
-                # Resolve conflicts
                 if blockers and robot.progress >= 1:
                     highest_priority_blocker = max(blockers, key=lambda r: r.priority, default=None)
-                    if highest_priority_blocker and highest_priority_blocker.priority > robot.priority:
-                        alternative_path = self.find_path(robot.pos_idx, robot.goal_idx, avoid_vertex=next_idx)
+                    if highest_priority_blocker.priority > robot.priority:
+                        # Show conflict notification
+                        messagebox.showwarning("Conflict Detected", 
+                                            f"{robot.id} (P:{robot.priority}) blocked by {highest_priority_blocker.id} (P:{highest_priority_blocker.priority})")
+                        # Lower-priority robot finds alternative path
+                        alternative_path = self.find_path(robot.pos_idx, robot.goal_idx, avoid_vertex=next_idx, avoid_lanes=self.occupied_lanes)
                         if alternative_path:
                             robot.path = alternative_path
-                            log_action(self.gui, f"{robot.id} rerouted to avoid {highest_priority_blocker.id}")
+                            robot.status = "moving"
+                            robot.progress = 0
+                            log_action(self.gui, f"{robot.id} (P:{robot.priority}) rerouted to avoid {highest_priority_blocker.id}")
                         else:
                             robot.status = "waiting"
-                            log_action(self.gui, f"{robot.id} waiting at {robot.pos_idx}")
-                    elif highest_priority_blocker.priority < robot.priority:
+                            self.waiting_cooldown[robot.id] = self.waiting_cooldown.get(robot.id, 0) + 1
+                            log_action(self.gui, f"{robot.id} (P:{robot.priority}) waiting due to no alternative path")
+                    else:
+                        # Higher-priority robot moves, lower-priority blockers adjust
                         for blocker in blockers:
-                            if blocker.previous_pos_idx:
-                                blocker.path = [blocker.previous_pos_idx] + self.find_path(blocker.previous_pos_idx, blocker.goal_idx)
-                                log_action(self.gui, f"{blocker.id} backtracked for {robot.id}")
+                            messagebox.showwarning("Conflict Detected", 
+                                                f"{blocker.id} (P:{blocker.priority}) blocked by {robot.id} (P:{robot.priority})")
+                            alternative_path = self.find_path(blocker.pos_idx, blocker.goal_idx, avoid_vertex=robot.pos_idx)
+                            if alternative_path:
+                                blocker.path = alternative_path
+                                blocker.status = "moving"
+                                blocker.progress = 0
+                                log_action(self.gui, f"{blocker.id} (P:{blocker.priority}) rerouted for {robot.id}")
                             else:
                                 blocker.status = "waiting"
-                    else:
-                        robot.status = "waiting"
-                        log_action(self.gui, f"{robot.id} waiting due to equal priority conflict")
-
+                                self.waiting_cooldown[blocker.id] = self.waiting_cooldown.get(blocker.id, 0) + 1
+                                log_action(self.gui, f"{blocker.id} (P:{blocker.priority}) waiting for {robot.id}")
                 elif robot.progress >= 1:
+                    # No blockers, proceed with movement
                     robot.previous_pos_idx = robot.pos_idx
                     robot.pos_idx = robot.path.pop(0)
                     if not robot.path:
                         robot.status = "task complete"
-                        log_action(self.gui, f"{robot.id} completed task")
+                        log_action(self.gui, f"{robot.id} (P:{robot.priority}) completed task")
 
             elif robot.status == "waiting" and robot.path:
                 next_idx = robot.path[0]
                 blockers = [r for r in robots if r != robot and r.pos_idx == next_idx]
                 if not blockers or all(r.priority < robot.priority for r in blockers):
+                    # Resolve waiting state for higher-priority robot
                     robot.status = "moving"
-                    log_action(self.gui, f"{robot.id} resumed movement")
+                    self.waiting_cooldown[robot.id] = 0
+                    log_action(self.gui, f"{robot.id} (P:{robot.priority}) resumed movement")
+                else:
+                    # Lower-priority robot finds alternative path
+                    alternative_path = self.find_path(robot.pos_idx, robot.goal_idx, avoid_vertex=next_idx, avoid_lanes=self.occupied_lanes)
+                    if alternative_path:
+                        robot.path = alternative_path
+                        robot.status = "moving"
+                        robot.progress = 0
+                        log_action(self.gui, f"{robot.id} (P:{robot.priority}) rerouted after waiting")
+                    else:
+                        self.waiting_cooldown[robot.id] = self.waiting_cooldown.get(robot.id, 0) + 1
 
-        # Handle deadlock by random movement
+        # Handle deadlock (existing logic)
         for robot in robots:
             if robot.status == "waiting" and self.waiting_cooldown.get(robot.id, 0) >= 3:
                 adjacent_vertices = [
@@ -155,4 +200,4 @@ class TrafficManager:
                     robot.pos_idx = random_vertex
                     robot.status = "moving"
                     self.waiting_cooldown[robot.id] = 0
-                    log_action(self.gui, f"{robot.id} randomly moved to resolve deadlock")
+                    log_action(self.gui, f"{robot.id} (P:{robot.priority}) randomly moved to resolve deadlock")

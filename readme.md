@@ -23,3 +23,5 @@ pip install -r requirements.txt
 python main.py
 
 ```
+[Demo video ](<../../Screen Recording 2025-03-30 at 11.00.10 PM.mov>)
+[Video_frive_linl][<https://drive.google.com/file/d/1HbGCQHu2IZnpsbL00IdTDNbKA_s-pR76/view?usp=sharing>]

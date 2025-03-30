@@ -41,6 +41,20 @@ class FleetGUI:
         self.graph_label = tk.Label(self.control_frame, text=f"Current Graph: {self.selected_graph.get()}")
         self.graph_label.pack(pady=10)
 
+        # Add instructions frame and label
+        self.instructions_frame = tk.Frame(self.right_frame)
+        self.instructions_frame.pack(pady=10)
+        instructions_text = (
+            "Instructions:\n"
+            "-> Click a node to spawn a robot\n"
+            "-> Higher the value, higher the priority\n"
+            "-> Click a robot to select it for movement\n"
+            "-> Click a destination node for the selected robot\n"
+            "-> Press the 'Start Simulation' button to begin"
+        )
+        self.instructions_label = tk.Label(self.instructions_frame, text=instructions_text, justify=tk.LEFT, font=("Arial", 10))
+        self.instructions_label.pack()
+
         self.log_frame = tk.Frame(self.right_frame)
         self.log_frame.pack(fill=tk.BOTH, expand=True)
         tk.Label(self.log_frame, text="Logs:").pack()
@@ -225,13 +239,18 @@ class FleetGUI:
         if self.running and not self.paused:
             for robot in self.fleet_manager.robots:
                 if robot.status == "moving" and robot.path:
-                    robot.progress += 0.05
+                    robot.progress += 0.02
                     if robot.progress >= 1:
                         log_action(self, f"{robot.id} (P:{robot.priority}) moved to {robot.path[0]}")
+                        robot.pos_idx = robot.path.pop(0)
+                        robot.progress = 0
+                        if not robot.path:
+                            robot.status = "task complete"
+
             self.fleet_manager.traffic_manager.update_traffic(self.fleet_manager.robots)
             self.draw_robots()
             self.update_dashboard()
-            self.root.after(100, self.update_simulation)
+            self.root.after(50, self.update_simulation)
 
     def update_dashboard(self):
         num_robots = len(self.fleet_manager.robots)
