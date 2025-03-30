@@ -1,6 +1,5 @@
-# src/controllers/traffic_manager.py
-import heapq
 import random
+import heapq
 from src.utils.helpers import log_action, notify_user
 
 class TrafficManager:
@@ -75,6 +74,7 @@ class TrafficManager:
                 next_idx = robot.path[0]
                 lane = tuple(sorted([robot.pos_idx, next_idx]))
                 
+                # Check for same-vertex conflict
                 same_vertex_competitors = [
                     r for r in robots
                     if r != robot and r.pos_idx == robot.pos_idx and r.path and r.path[0] == next_idx
@@ -160,8 +160,9 @@ class TrafficManager:
                     log_action(self.gui, f"{robot.id} (P:{robot.priority}) resumed moving to {next_idx}")
                     self.waiting_cooldown[robot.id] = 0
 
+        # Enhanced random movement to break deadlocks
         for robot in robots:
-            if robot.status == "waiting" and self.waiting_cooldown.get(robot.id, 0) >= 3:
+            if robot.status == "waiting" and self.waiting_cooldown.get(robot.id, 0) >= 3:  # Reduced threshold
                 adjacent_vertices = [
                     end for start, end, _ in self.nav_graph.lanes
                     if start == robot.pos_idx and end not in self.occupied_vertices
@@ -175,3 +176,4 @@ class TrafficManager:
                     self.waiting_cooldown[robot.id] = 0
                     log_action(self.gui, f"{robot.id} (P:{robot.priority}) randomly moved to {random_vertex} to break deadlock")
                     notify_user(self.gui, f"{robot.id} moved randomly to {random_vertex} to resolve deadlock")
+       

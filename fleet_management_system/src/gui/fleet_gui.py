@@ -263,3 +263,27 @@ class FleetGUI:
         if goal_idx is not None:
             self.fleet_manager.assign_task(highest_priority_robot, goal_idx)
             self.draw_robots()
+    
+    def update_gui(self):
+        self.canvas.delete("all")
+        for robot in self.fleet_manager.robots:
+            x, y = self.nav_graph.get_vertex_coords(robot.pos_idx)
+            self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill=robot.color)
+            if robot.path:
+                for idx in robot.path:
+                    next_x, next_y = self.nav_graph.get_vertex_coords(idx)
+                    self.canvas.create_line(x, y, next_x, next_y, fill="black", width=2)
+                    x, y = next_x, next_y
+        self.root.after(100, self.update_gui)
+
+    def main():
+        root = tk.Tk()
+        nav_graph = NavGraph("data/nav_graph_1.json")
+        traffic_manager = TrafficManager(nav_graph, None)
+        fleet_manager = FleetManager(nav_graph, traffic_manager)
+        fleet_gui = FleetGUI(root, nav_graph, fleet_manager)
+        fleet_gui.update_gui()
+        root.mainloop()
+
+if __name__ == "__main__":
+    main()

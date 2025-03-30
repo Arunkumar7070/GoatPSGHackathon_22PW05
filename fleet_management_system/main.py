@@ -12,6 +12,7 @@ def main():
     root = tk.Tk()
     try:
         nav_graph = NavGraph(os.path.join("data", "nav_graph_1.json"))
+    
     except ValueError as e:
         messagebox.showerror("Error", str(e))
         root.destroy()
