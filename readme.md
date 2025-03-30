@@ -23,5 +23,7 @@ pip install -r requirements.txt
 python main.py
 
 ```
+
 <br>
-[Demo video][<https://drive.google.com/file/d/1HbGCQHu2IZnpsbL00IdTDNbKA_s-pR76/view?usp=sharing>]
+<h2>Demo Video</h2>
+    <p><a href="https://drive.google.com/file/d/1HbGCQHu2IZnpsbL00IdTDNbKA_s-pR76/view?usp=sharing" target="_blank">Watch the demo video</a></p>
