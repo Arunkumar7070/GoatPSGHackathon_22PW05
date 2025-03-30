@@ -7,7 +7,7 @@ The Fleet Management System is a multi-robot coordination framework designed to 
 ## Features
 
 - **Path Optimization** – Uses the A\* algorithm to compute the shortest paths.
-- **Collision Avoidance** – Prevents head-on collisions with a lane reservation mechanism.
+- **Collision Avoidance** –  Lower priority get rerouted
 - **Dynamic Task Allocation** – Assigns and reallocates tasks in real-time.
 - **Finite Robot Management** – Optimized for handling a limited number of robots.
 - **Traffic Management** – Dynamically reserves lanes to prevent congestion and deadlocks.
